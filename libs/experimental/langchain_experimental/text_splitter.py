@@ -49,6 +49,8 @@ def combine_sentences(sentences: List[dict], buffer_size: int = 1) -> List[dict]
         # Then add the whole thing to your dict
         # Store the combined sentence in the current sentence dict
         sentences[i]["combined_sentence"] = combined_sentence
+    else:
+        sentences[-1]['combined_sentence'] = sentences[1]['sentence'] + " " + sentences[2]['sentence'] if len(sentences) > 2 else sentences[1]['sentence']
 
     return sentences
 
@@ -63,9 +65,17 @@ def calculate_cosine_distances(sentences: List[dict]) -> Tuple[List[float], List
         Tuple of distances and sentences.
     """
     distances = []
-    for i in range(len(sentences) - 1):
-        embedding_current = sentences[i]["combined_sentence_embedding"]
-        embedding_next = sentences[i + 1]["combined_sentence_embedding"]
+    len_sentences = len(sentences)
+    for i in range(len_sentences - 1):
+        if i ==0 and len_sentences > 2:
+            embedding_current = sentences[-1]["combined_sentence_embedding"]
+            embedding_next = sentences[i + 1]["combined_sentence_embedding"]
+        elif i ==0 and len_sentences == 2:
+            embedding_current = sentences[i]["combined_sentence_embedding"]
+            embedding_next = sentences[i + 1]["combined_sentence_embedding"]
+        else:
+            embedding_current = sentences[i-1]["combined_sentence_embedding"]
+            embedding_next = sentences[i]["combined_sentence_embedding"]
 
         # Calculate cosine similarity
         similarity = cosine_similarity([embedding_current], [embedding_next])[0][0]
@@ -243,6 +253,7 @@ class SemanticChunker(BaseDocumentTransformer):
             for i, x in enumerate(breakpoint_array)
             if x > breakpoint_distance_threshold
         ]
+        indices_above_thresh.sort()
 
         chunks = []
         start_index = 0
